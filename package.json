@@ -9,10 +9,22 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@expo/vector-icons": "^14.1.0",
+    "@google/genai": "^1.10.0",
+    "@react-native-async-storage/async-storage": "2.1.2",
     "expo": "~53.0.17",
+    "expo-document-picker": "~13.1.6",
+    "expo-file-system": "~18.1.11",
+    "expo-font": "~13.3.2",
+    "expo-print": "~14.1.4",
+    "expo-sharing": "~13.1.5",
+    "expo-splash-screen": "~0.30.10",
+    "expo-sqlite": "~15.2.14",
     "expo-status-bar": "~2.2.3",
     "react": "19.0.0",
-    "react-native": "0.79.5"
+    "react-native": "0.79.5",
+    "react-native-markdown-display": "^7.0.2",
+    "remarkable": "^2.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"
