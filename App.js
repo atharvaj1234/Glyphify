@@ -15,7 +15,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as Font from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { GoogleGenAI } from '@google/genai';
 
 // Import database functions
@@ -109,10 +109,10 @@ export default function App() {
       try {
         await initDb();
 
-        const onboarded = await AsyncStorage.getItem('hasOnboarded');
+        const onboarded = await SecureStore.getItemAsync('hasOnboarded');
         if (onboarded === 'true') {
           setOnboardingCompleted(true);
-          const storedApiKey = await AsyncStorage.getItem('gemini_api_key');
+          const storedApiKey = await SecureStore.getItemAsync('gemini_api_key');
           if (storedApiKey) {
             const isValid = await validateGeminiApiKey(storedApiKey);
             if (isValid) {
@@ -131,13 +131,13 @@ export default function App() {
           }
         }
 
-        const storedAIModel = await AsyncStorage.getItem('selected_ai_model');
+        const storedAIModel = await SecureStore.getItemAsync('selected_ai_model');
           if (storedAIModel) {
             setSelectedAIModel(storedAIModel);
           } else {
             // Set a default if nothing is stored initially
             setSelectedAIModel('gemini-2.0-flash'); // Default model name
-            await AsyncStorage.setItem('selected_ai_model', 'gemini-2.0-flash');
+            await SecureStore.setItemAsync('selected_ai_model', 'gemini-2.0-flash');
           }
 
         await Font.loadAsync({

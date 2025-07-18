@@ -11,7 +11,7 @@ import {
   Modal,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { GoogleGenAI } from '@google/genai';
 
 import { COLORS } from './constants/colors';
@@ -105,7 +105,7 @@ setAvailableAIModels(geminiModels);
     try {
       const isValid = await validateGeminiApiKey(apiKeyInput);
       if (isValid) {
-        await AsyncStorage.setItem('gemini_api_key', apiKeyInput);
+        await SecureStore.setItemAsync('gemini_api_key', apiKeyInput);
         setGeminiApiKey(apiKeyInput); // Update API key in App.js state
         Alert.alert('Success', 'Your Gemini API key has been updated and validated!');
         // Trigger model fetch immediately after successful key update
@@ -125,7 +125,7 @@ setAvailableAIModels(geminiModels);
 const handleSelectAIModel = async (modelName) => { // Make this function async
     setSelectedAIModel(modelName);
     setShowModelDropdown(false);
-    await AsyncStorage.setItem('selected_ai_model', modelName); // Save selected model to AsyncStorage
+    await SecureStore.setItemAsync('selected_ai_model', modelName); // Save selected model to storage
   };
 
   const handleContactUs = () => {

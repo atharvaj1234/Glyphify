@@ -9,12 +9,12 @@ import {
   Dimensions,
   TextInput,
   Alert,
-  ActivityIndicator, // Added for loading state
-  Platform, // Added for platform-specific padding
-  KeyboardAvoidingView
+  ActivityIndicator,
+  Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 
 import { COLORS } from './constants/colors';
 
@@ -27,6 +27,7 @@ const OnboardingScreen = ({ onFinishOnboarding, setGeminiApiKey, validateGeminiA
   const [apiKeyError, setApiKeyError] = useState(false);
   const scrollViewRef = useRef(null);
 
+  // Mock asset requires. Replace with your actual assets.
   const onboardingImages = {
     slide1: require('./assets/onboarding_1.png'),
     slide2: require('./assets/onboarding_2.png'),
@@ -45,6 +46,7 @@ const OnboardingScreen = ({ onFinishOnboarding, setGeminiApiKey, validateGeminiA
     {
       image: onboardingImages.slide2,
       title: 'Key Features',
+      // Note: This slide has a null description, as the features list below serves as the content.
       description: null,
       type: 'features',
       features: [
@@ -85,7 +87,6 @@ const OnboardingScreen = ({ onFinishOnboarding, setGeminiApiKey, validateGeminiA
     const contentOffsetX = event.nativeEvent.contentOffset.x;
     const newPage = Math.round(contentOffsetX / width);
     setCurrentPage(newPage);
-    // Reset API key error when scrolling away from the API key slide
     if (newPage !== slides.findIndex(slide => slide.type === 'apiKeyInput')) {
       setApiKeyError(false);
     }
@@ -97,7 +98,6 @@ const OnboardingScreen = ({ onFinishOnboarding, setGeminiApiKey, validateGeminiA
 
   const handleNext = async () => {
     if (currentPage === slides.findIndex(slide => slide.type === 'apiKeyInput')) {
-      // If on API key input slide, validate the key first
       if (!apiKeyInput.trim()) {
         Alert.alert('API Key Required', 'Please enter your Gemini API key to proceed.');
         setApiKeyError(true);
@@ -110,27 +110,24 @@ const OnboardingScreen = ({ onFinishOnboarding, setGeminiApiKey, validateGeminiA
       setIsValidating(false);
 
       if (isValid) {
-        await AsyncStorage.setItem('gemini_api_key', apiKeyInput);
-        setGeminiApiKey(apiKeyInput); // Update API key in App.js state
+        await SecureStore.setItemAsync('gemini_api_key', apiKeyInput);
+        setGeminiApiKey(apiKeyInput);
         Alert.alert('Success', 'Your Gemini API key is valid and saved!');
         scrollToPage(currentPage + 1);
       } else {
         Alert.alert('Invalid API Key', 'The entered Gemini API key is not valid. Please check and try again.');
         setApiKeyError(true);
-        return;
       }
     } else if (currentPage < slides.length - 1) {
       scrollToPage(currentPage + 1);
     } else {
-      // On the final slide, "Get Started"
-      // Check if API key is already set (it should be validated and set by now)
-      const storedKey = await AsyncStorage.getItem('gemini_api_key');
+      const storedKey = await SecureStore.getItemAsync('gemini_api_key');
       if (!storedKey || !(await validateGeminiApiKey(storedKey))) {
-          Alert.alert('API Key Missing or Invalid', 'Please go back to "Enhance Your Experience" and enter a valid Gemini API key.');
-          scrollToPage(slides.findIndex(slide => slide.type === 'apiKeyInput')); // Go back to API key input
+          Alert.alert('API Key Missing or Invalid', 'Please go back and enter a valid Gemini API key.');
+          scrollToPage(slides.findIndex(slide => slide.type === 'apiKeyInput'));
           return;
       }
-      await AsyncStorage.setItem('hasOnboarded', 'true');
+      await SecureStore.setItemAsync('hasOnboarded', 'true');
       onFinishOnboarding();
     }
   };
@@ -141,19 +138,13 @@ const OnboardingScreen = ({ onFinishOnboarding, setGeminiApiKey, validateGeminiA
 
   const isNextButtonDisabled = () => {
     if (currentPage === slides.findIndex(slide => slide.type === 'apiKeyInput')) {
-      return !apiKeyInput.trim() || isValidating; // Disable if empty or validating
+      return !apiKeyInput.trim() || isValidating;
     }
-    return isValidating; // Disable only if validating on other slides (shouldn't happen)
+    return isValidating;
   };
 
-
   return (
-    <View style={styles.container}>
-            <KeyboardAvoidingView
-        style={styles.keyboardAvoidingContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} // 'padding' for iOS, 'height' or 'position' for Android
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0} // Adjust offset if header is fixed
-      >
+    <ScrollView>
       <ScrollView
         ref={scrollViewRef}
         horizontal
@@ -162,18 +153,16 @@ const OnboardingScreen = ({ onFinishOnboarding, setGeminiApiKey, validateGeminiA
         onScroll={handleScroll}
         scrollEventThrottle={16}
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollViewContent}
+        keyboardShouldPersistTaps="handled"
       >
         {slides.map((slide, index) => (
           <View key={index} style={styles.slide}>
             <Image source={slide.image} style={styles.slideImage} resizeMode="cover" />
-
             <View style={styles.textContainer}>
               <Text style={styles.slideTitle}>{slide.title}</Text>
               {slide.description && (
                 <Text style={styles.slideDescription}>{slide.description}</Text>
               )}
-
               {slide.type === 'features' && (
                 <View style={styles.featuresList}>
                   {slide.features.map((feature, featIndex) => (
@@ -189,7 +178,6 @@ const OnboardingScreen = ({ onFinishOnboarding, setGeminiApiKey, validateGeminiA
                   ))}
                 </View>
               )}
-
               {slide.type === 'apiKeyInput' && (
                 <View style={styles.apiKeyInputContainer}>
                   <View style={[styles.textInputWrapper, apiKeyError && styles.textInputError]}>
@@ -200,11 +188,11 @@ const OnboardingScreen = ({ onFinishOnboarding, setGeminiApiKey, validateGeminiA
                       value={apiKeyInput}
                       onChangeText={(text) => {
                         setApiKeyInput(text);
-                        setApiKeyError(false); // Clear error on text change
+                        setApiKeyError(false);
                       }}
                       autoCapitalize="none"
                       autoCorrect={false}
-                      editable={!isValidating} // Disable input while validating
+                      editable={!isValidating}
                     />
                     {isValidating && (
                       <ActivityIndicator size="small" color={COLORS.progressBarFill} style={styles.validationSpinner} />
@@ -213,7 +201,7 @@ const OnboardingScreen = ({ onFinishOnboarding, setGeminiApiKey, validateGeminiA
                   {apiKeyError && (
                     <Text style={styles.errorMessage}>Invalid API Key. Please check it.</Text>
                   )}
-                  <TouchableOpacity onPress={() => Alert.alert('API Key Help', 'Visit https://aistudio.google.com/app/apikey to get your Gemini API key.')}>
+                  <TouchableOpacity onPress={() => Alert.alert('API Key Help', 'Visit aistudio.google.com to get your Gemini API key.')}>
                     <Text style={styles.helpText}>Need help obtaining or using an API key?</Text>
                   </TouchableOpacity>
                 </View>
@@ -222,9 +210,6 @@ const OnboardingScreen = ({ onFinishOnboarding, setGeminiApiKey, validateGeminiA
           </View>
         ))}
       </ScrollView>
-      </KeyboardAvoidingView>
-
-      {/* Bottom Navigation / Controls */}
       <View style={styles.bottomControls}>
         <View style={styles.paginationDots}>
           {slides.map((_, index) => (
@@ -238,22 +223,18 @@ const OnboardingScreen = ({ onFinishOnboarding, setGeminiApiKey, validateGeminiA
             />
           ))}
         </View>
-
         {slides[currentPage].type === 'final' ? (
           <View style={styles.finalButtonsContainer}>
             <TouchableOpacity
                 style={styles.getStartedButton}
                 onPress={handleNext}
-                disabled={isNextButtonDisabled()} // Disable if validating
+                disabled={isNextButtonDisabled()}
             >
               {isValidating ? (
                 <ActivityIndicator color={COLORS.blueButtonText} />
               ) : (
                 <Text style={styles.getStartedButtonText}>Get Started</Text>
               )}
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.changeApiKeyButton} onPress={handleChangeApiKey}>
-              <Text style={styles.changeApiKeyButtonText}>Change API Key</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -270,7 +251,7 @@ const OnboardingScreen = ({ onFinishOnboarding, setGeminiApiKey, validateGeminiA
           </TouchableOpacity>
         )}
       </View>
-    </View>
+    </ScrollView>
   );
 };
 
@@ -282,26 +263,25 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  scrollViewContent: {
-    // Width is determined by the `width` of each `slide` component multiplied by slide count
-  },
   slide: {
     width: width,
     alignItems: 'center',
-    paddingBottom: 20,
+    paddingBottom: 20, // Provides spacing at the bottom of slide content
   },
   slideImage: {
     width: width,
     height: 320,
     backgroundColor: COLORS.primaryBackground,
   },
+  // This is the corrected style for textContainer
   textContainer: {
     width: '100%',
     paddingHorizontal: 16,
     alignItems: 'center',
   },
   slideTitle: {
-    fontFamily: 'Inter-Bold',
+    // Using system fonts for compatibility
+    fontWeight: 'bold',
     fontSize: 32,
     lineHeight: 40,
     textAlign: 'center',
@@ -310,7 +290,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   slideDescription: {
-    fontFamily: 'Inter-Regular',
     fontSize: 16,
     lineHeight: 24,
     textAlign: 'center',
@@ -343,13 +322,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   featureTitle: {
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     fontSize: 16,
     lineHeight: 24,
     color: COLORS.darkText,
   },
   featureDescription: {
-    fontFamily: 'Inter-Regular',
     fontSize: 14,
     lineHeight: 21,
     color: COLORS.inactiveIcon,
@@ -361,7 +339,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   textInputWrapper: {
-    flexDirection: 'row', // To align input and spinner
+    flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
     height: 56,
@@ -370,25 +348,23 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: COLORS.primaryBackground,
     paddingHorizontal: 15,
-    justifyContent: 'space-between', // Push spinner to end
+    justifyContent: 'space-between',
     marginBottom: 16,
   },
   textInputError: {
-    borderColor: 'red', // Highlight border in red on error
+    borderColor: 'red',
   },
   apiKeyInput: {
-    fontFamily: 'Inter-Regular',
     fontSize: 16,
     lineHeight: 24,
     color: COLORS.darkText,
-    flex: 1, // Allow input to take most space
-    paddingRight: 10, // Space for spinner
+    flex: 1,
+    paddingRight: 10,
   },
   validationSpinner: {
     marginLeft: 10,
   },
   errorMessage: {
-    fontFamily: 'Inter-Regular',
     fontSize: 14,
     color: 'red',
     marginBottom: 8,
@@ -396,7 +372,6 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   helpText: {
-    fontFamily: 'Inter-Regular',
     fontSize: 14,
     lineHeight: 21,
     textAlign: 'center',
@@ -404,14 +379,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   bottomControls: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     paddingVertical: 12,
     paddingHorizontal: 16,
     backgroundColor: COLORS.primaryBackground,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 12,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20, // Added extra padding for Android notch safety
   },
   paginationDots: {
     flexDirection: 'row',
@@ -441,7 +412,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   nextButtonText: {
-    fontFamily: 'Inter-Bold',
+    fontWeight: 'bold',
     fontSize: 16,
     lineHeight: 24,
     color: COLORS.blueButtonText,
@@ -462,7 +433,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   getStartedButtonText: {
-    fontFamily: 'Inter-Bold',
+    fontWeight: 'bold',
     fontSize: 16,
     lineHeight: 24,
     color: COLORS.blueButtonText,
@@ -477,7 +448,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   changeApiKeyButtonText: {
-    fontFamily: 'Inter-Bold',
+    fontWeight: 'bold',
     fontSize: 16,
     lineHeight: 24,
     color: COLORS.darkText,
