@@ -16,15 +16,14 @@ import Markdown from 'react-native-markdown-display';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
-
-import { Remarkable } from 'remarkable'; // Import Remarkable parser <--- NEW IMPORT
+import MarkdownIt from 'markdown-it'; // ✅ New dependency
 
 import { COLORS } from './constants/colors';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-// Initialize Remarkable parser once outside the component to avoid re-creation on every render
-const md = new Remarkable();
+// Initialize pure‑JS markdown converter
+const mdParser = new MarkdownIt();
 
 const ProcessedOutputScreen = ({
   setCurrentScreen,
@@ -63,10 +62,7 @@ const ProcessedOutputScreen = ({
 
   const handleDelete = async () => {
     setShowDropdown(false);
-    if (!documentId) {
-      Alert.alert('Error', 'Cannot delete: Document ID not found.');
-      return;
-    }
+    if (!documentId) return Alert.alert('Error', 'Document ID not found.');
     Alert.alert(
       'Confirm Delete',
       'Are you sure you want to delete this document from history?',
@@ -90,154 +86,61 @@ const ProcessedOutputScreen = ({
     );
   };
 
-  // Helper function to generate HTML for PDF
+  // Prepare HTML for PDF export
   const generateHtmlForPdf = (content, type) => {
-    let htmlContent = '';
-    const titleHtml = `<h1 style="font-family: 'Inter-Bold'; font-size: 24px; color: ${COLORS.darkText}; margin-bottom: 15px;">${editableTitle}</h1>`;
-
-    const basicHtmlStyles = `
+    const titleHtml = `<h1 style="font-family:'Inter-Bold'; font-size:24px; color:${COLORS.darkText}; margin-bottom:15px;">${editableTitle}</h1>`;
+    const basicStyles = `
       <style>
-        @font-face {
-          font-family: 'Inter-Regular';
-          src: url('Inter-Regular.ttf'); /* Placeholder - fonts aren't directly embedded in HTML for print easily */
-        }
-        @font-face {
-          font-family: 'Inter-Bold';
-          src: url('Inter-Bold.ttf'); /* Placeholder */
-        }
-        body { font-family: 'Inter-Regular', sans-serif; font-size: 16px; line-height: 1.5; color: ${COLORS.darkText}; padding: 20px; }
-        h1, h2, h3, h4, h5, h6 { font-family: 'Inter-Bold', sans-serif; color: ${COLORS.darkText}; margin-top: 1em; margin-bottom: 0.5em;}
-        h1 { font-size: 2em; }
-        h2 { font-size: 1.5em; }
-        h3 { font-size: 1.2em; }
-        ul { margin-left: 20px; }
-        pre { background-color: #f8f8f8; border: 1px solid #ddd; padding: 10px; border-radius: 5px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; }
-        code { background-color: #eee; padding: 2px 4px; border-radius: 3px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: top; }
-        th { background-color: ${COLORS.lightBlueBackground}; font-family: 'Inter-Bold'; }
+        body { font-family:'Inter-Regular'; font-size:16px; color:${COLORS.darkText}; padding:20px; line-height:1.5; }
+        h1,h2,h3,h4,h5,h6 { font-family:'Inter-Bold'; color:${COLORS.darkText}; margin-top:1em; margin-bottom:0.5em; }
+        pre { background:#f8f8f8; padding:10px; border:1px solid #ddd; border-radius:5px; overflow-x:auto; }
+        code { background:#eee; padding:2px 4px; border-radius:3px; }
       </style>
     `;
-
+    let htmlContent = '';
     if (type === 'markdown') {
-      htmlContent = md.render(content); // Use Remarkable to convert Markdown to HTML <--- KEY CHANGE
+      htmlContent = mdParser.render(content);
     } else if (type === 'csv') {
-      const rows = content.split('\n').map((row) => row.split(','));
-      let tableHtml = '<table>';
-      rows.forEach((row, rowIndex) => {
-        tableHtml += '<tr>';
-        row.forEach((cell) => {
-          tableHtml += rowIndex === 0 ? `<th>${cell.trim()}</th>` : `<td>${cell.trim()}</td>`;
-        });
-        tableHtml += '</tr>';
-      });
-      tableHtml += '</table>';
-      htmlContent = tableHtml;
+      const rows = content.split('\n').map(r => r.split(','));
+      htmlContent = '<table style="border-collapse:collapse;width:100%;">' +
+        rows.map((row, i) => '<tr>' +
+          row.map(cell => `<${i===0?'th':'td'} style="border:1px solid #ddd;padding:8px;text-align:left;">${cell.trim()}</${i===0?'th':'td'}>`).join('') +
+        '</tr>').join('') + '</table>';
     } else {
-      htmlContent = `<p>${content.replace(/\n/g, '<br/>')}</p>`;
+      htmlContent = `<p>${content.replace(/\n/g,'<br/>')}</p>`;
     }
-
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>${editableTitle}</title>
-        ${basicHtmlStyles}
-      </head>
-      <body>
-        ${titleHtml}
-        ${htmlContent}
-      </body>
-      </html>
-    `;
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${editableTitle}</title>${basicStyles}</head><body>${titleHtml}${htmlContent}</body></html>`;
   };
 
   const exportFile = async (format) => {
     setShowDropdown(false);
     try {
-      let fileUri = '';
-      let filename = editableTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-      let mimeType = '';
-      let contentToSave = outputText; // This is the content for direct file saving
-
+      let uri, filename = editableTitle.replace(/[^a-z0-9]/gi,'_').toLowerCase(), mime;
       if (format === 'pdf') {
         const html = generateHtmlForPdf(outputText, outputType);
-        const { uri } = await Print.printToFileAsync({ html });
-        fileUri = uri;
-        filename = `${filename}.pdf`;
-        mimeType = 'application/pdf';
-      } else if (format === 'markdown') {
-        fileUri = `${FileSystem.documentDirectory}${filename}.md`;
-        await FileSystem.writeAsStringAsync(fileUri, outputText);
-        filename = `${filename}.md`;
-        mimeType = 'text/markdown';
-      } else if (format === 'csv') {
-        fileUri = `${FileSystem.documentDirectory}${filename}.csv`;
-        await FileSystem.writeAsStringAsync(fileUri, outputText);
-        filename = `${filename}.csv`;
-        mimeType = 'text/csv';
-      } else if (format === 'text') {
-        fileUri = `${FileSystem.documentDirectory}${filename}.txt`;
-        await FileSystem.writeAsStringAsync(fileUri, outputText);
-        filename = `${filename}.txt`;
-        mimeType = 'text/plain';
-      } else if (format === 'excel') {
-        fileUri = `${FileSystem.documentDirectory}${filename}.csv`; // Excel compatibility via CSV
-        await FileSystem.writeAsStringAsync(fileUri, outputText);
-        filename = `${filename}.csv`;
-        mimeType = 'application/vnd.ms-excel';
-        Alert.alert('Export to Excel', 'Exporting as CSV. You can open this file directly in Excel.');
+        const result = await Print.printToFileAsync({ html });
+        uri = result.uri; filename += '.pdf'; mime = 'application/pdf';
       } else {
-        Alert.alert('Error', 'Unsupported export format.');
-        return;
+        const ext = format === 'excel' ? 'csv' : format;
+        uri = `${FileSystem.documentDirectory}${filename}.${ext}`;
+        await FileSystem.writeAsStringAsync(uri, outputText);
+        mime = format === 'markdown' ? 'text/markdown' : format === 'csv' || format==='excel' ? 'text/csv' : 'text/plain';
+        filename += `.${ext}`;
+        if (format === 'excel') Alert.alert('Export to Excel','Saved as CSV—compatible with Excel.');
       }
-
-      if (!(await Sharing.isAvailableAsync())) {
-        Alert.alert('Error', "Sharing is not available on your device.");
-        return;
-      }
-
-      await Sharing.shareAsync(fileUri, {
-        mimeType,
-        dialogTitle: `Export ${filename}`,
-        UTI: Platform.OS === 'ios' ? filename.split('.').pop() : undefined,
-      });
-
-    } catch (error) {
-      console.error('Error exporting file:', error);
-      Alert.alert('Export Error', `Failed to export file: ${error.message}`);
+      if (!(await Sharing.isAvailableAsync())) return Alert.alert('Error','Sharing not available.');
+      await Sharing.shareAsync(uri, { mimeType: mime, dialogTitle: `Export ${filename}`, UTI: Platform.OS === 'ios' ? filename.split('.').pop() : undefined });
+    } catch (err) {
+      console.error('Export error:', err);
+      Alert.alert('Export Error', err.message);
     }
   };
 
   const getExportButtonDetails = () => {
     switch (outputType) {
-      case 'markdown':
-        return {
-          mainButtonText: 'Export PDF',
-          mainButtonAction: () => exportFile('pdf'),
-          dropdownOptions: [
-            { label: 'Export Markdown', action: () => exportFile('markdown') },
-          ],
-        };
-      case 'csv':
-        return {
-          mainButtonText: 'Export Excel Sheet',
-          mainButtonAction: () => exportFile('excel'),
-          dropdownOptions: [
-            { label: 'Export CSV', action: () => exportFile('csv') },
-            { label: 'Export PDF', action: () => exportFile('pdf') },
-          ],
-        };
-      case 'text':
-      default:
-        return {
-          mainButtonText: 'Export as Text',
-          mainButtonAction: () => exportFile('text'),
-          dropdownOptions: [
-            { label: 'Export PDF', action: () => exportFile('pdf') },
-          ],
-        };
+      case 'markdown': return { mainButtonText:'Export PDF', mainButtonAction:() => exportFile('pdf'), dropdownOptions:[{label:'Export Markdown',action:()=>exportFile('markdown')}] };
+      case 'csv': return { mainButtonText:'Export Excel Sheet', mainButtonAction:() => exportFile('excel'), dropdownOptions:[{label:'Export CSV',action:()=>exportFile('csv')},{label:'Export PDF',action:()=>exportFile('pdf')}] };
+      default: return { mainButtonText:'Export as Text', mainButtonAction:() => exportFile('text'), dropdownOptions:[{label:'Export PDF',action:()=>exportFile('pdf')}] };
     }
   };
 
@@ -245,141 +148,59 @@ const ProcessedOutputScreen = ({
 
   const renderContent = () => {
     if (outputType === 'markdown') {
-      return (
-        <ScrollView horizontal contentContainerStyle={styles.markdownScrollContent}>
-          <Markdown style={markdownStyles}>{outputText}</Markdown>
-        </ScrollView>
-      );
-    } else if (outputType === 'csv') {
-      const rows = outputText.split('\n').map((row) => row.split(','));
-
-      const numColumns = rows[0] ? rows[0].length : 0;
-      const calculatedColumnWidths = Array(numColumns).fill(0);
-
-      rows.forEach((row) => {
-        row.forEach((cellContent, colIndex) => {
-          const charWidthPx = 8;
-          const cellPaddingPx = 16;
-          const estimatedWidth = (cellContent ? cellContent.trim().length : 0) * charWidthPx + cellPaddingPx;
-
-          if (estimatedWidth > calculatedColumnWidths[colIndex]) {
-            calculatedColumnWidths[colIndex] = estimatedWidth;
-          }
-        });
-      });
-
-      const minColWidth = 80;
-      for (let i = 0; i < numColumns; i++) {
-        if (calculatedColumnWidths[i] < minColWidth) {
-          calculatedColumnWidths[i] = minColWidth;
-        }
-      }
-
-      return (
-        <ScrollView horizontal contentContainerStyle={styles.csvScrollContent}>
-          <View style={styles.csvTable}>
-            {rows.map((row, rowIndex) => (
-              <View key={rowIndex} style={styles.csvRow}>
-                {row.map((cell, cellIndex) => (
-                  <Text
-                    key={cellIndex}
-                    style={[
-                      rowIndex === 0 ? styles.csvHeaderCell : styles.csvCell,
-                      { width: calculatedColumnWidths[cellIndex] || minColWidth },
-                    ]}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {cell.trim()}
-                  </Text>
-                ))}
-              </View>
-            ))}
-          </View>
-        </ScrollView>
-      );
-    } else {
-      return (
-        <ScrollView horizontal contentContainerStyle={styles.textScrollContent}>
-          <Text style={styles.contentText}>{outputText}</Text>
-        </ScrollView>
-      );
+      return <ScrollView horizontal contentContainerStyle={styles.markdownScrollContent}><Markdown style={markdownStyles}>{outputText}</Markdown></ScrollView>;
     }
-  };
-
-  const handleEditTitleInDropdown = () => {
-    setShowDropdown(false);
-    setIsEditingTitle(true);
+    if (outputType === 'csv') {
+      const rows = outputText.split('\n').map(r=>r.split(','));
+      const colCount = rows[0]?.length || 0;
+      const widths = rows.reduce((w,row)=>row.map((cell,i)=>Math.max(w[i]||0, cell.trim().length*8 + 16)), Array(colCount).fill(0));
+      const minW=80; for (let i=0;i<widths.length;i++) widths[i]=Math.max(widths[i],minW);
+      return <ScrollView horizontal contentContainerStyle={styles.csvScrollContent}><View style={styles.csvTable}>{rows.map((row,ri)=><View key={ri} style={styles.csvRow}>{row.map((cell,ci)=><Text key={ci} style={[ri===0?styles.csvHeaderCell:styles.csvCell,{width:widths[ci]}]} numberOfLines={1} ellipsizeMode="tail">{cell.trim()}</Text>)}</View>)}</View></ScrollView>;
+    }
+    return <ScrollView horizontal contentContainerStyle={styles.textScrollContent}><Text style={styles.contentText}>{outputText}</Text></ScrollView>;
   };
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButtonContainer} onPress={() => setCurrentScreen('Home')}>
           <Ionicons name="arrow-back" size={24} color={COLORS.darkText} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Processed Output</Text>
-        {/* Dropdown for More Options */}
         <View style={styles.dropdownContainer}>
           <TouchableOpacity onPress={() => setShowDropdown(!showDropdown)}>
             <Ionicons name="ellipsis-vertical" size={24} color={COLORS.darkText} />
           </TouchableOpacity>
           {showDropdown && (
             <View style={styles.dropdownMenu}>
-              {/* Existing Edit/Delete options */}
-              <TouchableOpacity style={styles.dropdownItem} onPress={handleEditTitleInDropdown}>
+              <TouchableOpacity style={styles.dropdownItem} onPress={() => { setShowDropdown(false); setIsEditingTitle(true); }}>
                 <Text style={styles.dropdownItemText}>Edit Title</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.dropdownItem} onPress={handleDelete}>
                 <Text style={styles.dropdownItemText}>Delete</Text>
               </TouchableOpacity>
-              {/* New Export options in dropdown */}
-              {dropdownOptions.map((option, index) => (
-                <TouchableOpacity
-                  key={option.label} // Use label as key for stability
-                  style={[styles.dropdownItem, index === dropdownOptions.length - 1 ? styles.lastDropdownItem : {}]}
-                  onPress={option.action}
-                >
-                  <Text style={styles.dropdownItemText}>{option.label}</Text>
+              {dropdownOptions.map(opt=>(
+                <TouchableOpacity key={opt.label} style={styles.dropdownItem} onPress={opt.action}>
+                  <Text style={styles.dropdownItemText}>{opt.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
           )}
         </View>
       </View>
-
       <ScrollView contentContainerStyle={styles.scrollViewContent}>
-        {/* Document Title */}
         <View style={styles.documentTitleContainer}>
           <Text style={styles.documentTitle}>{editableTitle}</Text>
         </View>
-
-        {/* Extracted Content */}
-        <View style={styles.contentContainer}>
-          {renderContent()}
-        </View>
-
-        {/* Main Export Button */}
+        <View style={styles.contentContainer}>{renderContent()}</View>
         <View style={styles.saveButtonRow}>
           <TouchableOpacity style={styles.saveButton} onPress={mainButtonAction}>
             <Text style={styles.saveButtonText}>{mainButtonText}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
-
-      {/* Edit Title Modal */}
-      <Modal
-        visible={isEditingTitle}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setIsEditingTitle(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalBackground}
-          activeOpacity={1}
-          onPress={() => setIsEditingTitle(false)}
-        >
+      <Modal visible={isEditingTitle} transparent animationType="fade" onRequestClose={() => setIsEditingTitle(false)}>
+        <TouchableOpacity style={styles.modalBackground} activeOpacity={1} onPress={() => setIsEditingTitle(false)}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Edit Title</Text>
             <TextInput

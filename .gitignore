@@ -26,6 +26,9 @@ npm-debug.*
 yarn-debug.*
 yarn-error.*
 
+# build
+android
+
 # macOS
 .DS_Store
 *.pem
@@ -35,3 +38,4 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+my-release-key.keystore

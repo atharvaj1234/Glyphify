@@ -40,8 +40,8 @@ const dummyMeetingNotesImage = require('./assets/meeting_notes.png');
 const dummyLectureNotesImage = require('./assets/lecture_notes.png');
 const uploadCardImage = require('./assets/upload_card.png');
 const documentIconPlaceholder = require('./assets/document_icon.png');
-const spreadsheetIconPlaceholder = require('./assets/spreadsheet_icon.png');
-const markdownIconPlaceholder = require('./assets/markdown_icon.png');
+const spreadsheetIconPlaceholder = require('./assets/spreadsheet_icon.jpeg');
+const markdownIconPlaceholder = require('./assets/markdown_icon.jpeg');
 
 
 // Function to validate Gemini API Key (already exists, but including for context)

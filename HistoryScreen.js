@@ -17,8 +17,8 @@ import { COLORS } from './constants/colors';
 
 // Helper for image placeholders (you might want more specific icons based on outputType)
 const documentIconPlaceholder = require('./assets/document_icon.png'); // You need this image
-const spreadsheetIconPlaceholder = require('./assets/spreadsheet_icon.png'); // You need this image
-const markdownIconPlaceholder = require('./assets/markdown_icon.png'); // You need this image
+const spreadsheetIconPlaceholder = require('./assets/spreadsheet_icon.jpeg'); // You need this image
+const markdownIconPlaceholder = require('./assets/markdown_icon.jpeg'); // You need this image
 
 
 const HistoryScreen = ({
