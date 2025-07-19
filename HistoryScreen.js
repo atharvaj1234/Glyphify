@@ -1,5 +1,5 @@
 // HistoryScreen.js
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   StyleSheet,
   Text,
@@ -11,15 +11,14 @@ import {
   TextInput,
   RefreshControl,
   Image, // For document icons
-} from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { COLORS } from './constants/colors';
+} from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { COLORS } from "./constants/colors";
 
 // Helper for image placeholders (you might want more specific icons based on outputType)
-const documentIconPlaceholder = require('./assets/document_icon.png'); // You need this image
-const spreadsheetIconPlaceholder = require('./assets/spreadsheet_icon.jpeg'); // You need this image
-const markdownIconPlaceholder = require('./assets/markdown_icon.jpeg'); // You need this image
-
+const documentIconPlaceholder = require("./assets/document_icon.png"); // You need this image
+const spreadsheetIconPlaceholder = require("./assets/spreadsheet_icon.jpeg"); // You need this image
+const markdownIconPlaceholder = require("./assets/markdown_icon.jpeg"); // You need this image
 
 const HistoryScreen = ({
   setCurrentScreen,
@@ -34,7 +33,7 @@ const HistoryScreen = ({
   const [refreshing, setRefreshing] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [currentEditItem, setCurrentEditItem] = useState(null);
-  const [newTitle, setNewTitle] = useState('');
+  const [newTitle, setNewTitle] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [dropdownItemId, setDropdownItemId] = useState(null);
 
@@ -44,8 +43,8 @@ const HistoryScreen = ({
       const docs = await getHistoryDocuments();
       setHistoryItems(docs);
     } catch (error) {
-      console.error('Failed to fetch history:', error);
-      Alert.alert('Error', 'Failed to load history documents.');
+      console.error("Failed to fetch history:", error);
+      Alert.alert("Error", "Failed to load history documents.");
     } finally {
       setRefreshing(false);
       setHistoryNeedsRefresh(false); // Reset refresh trigger
@@ -65,20 +64,20 @@ const HistoryScreen = ({
   const handleDelete = async (id) => {
     setShowDropdown(false);
     Alert.alert(
-      'Confirm Delete',
-      'Are you sure you want to delete this document from history?',
+      "Confirm Delete",
+      "Are you sure you want to delete this document from history?",
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Delete',
+          text: "Delete",
           onPress: async () => {
             try {
               await deleteDocument(id);
-              Alert.alert('Success', 'Document deleted.');
+              Alert.alert("Success", "Document deleted.");
               fetchHistory(); // Refresh the list
             } catch (error) {
-              console.error('Error deleting document:', error);
-              Alert.alert('Error', 'Failed to delete document.');
+              console.error("Error deleting document:", error);
+              Alert.alert("Error", "Failed to delete document.");
             }
           },
         },
@@ -95,19 +94,19 @@ const HistoryScreen = ({
 
   const handleSaveTitle = async () => {
     if (!newTitle.trim()) {
-      Alert.alert('Error', 'Title cannot be empty.');
+      Alert.alert("Error", "Title cannot be empty.");
       return;
     }
     if (currentEditItem && newTitle.trim() !== currentEditItem.title) {
       try {
         await updateDocumentTitle(currentEditItem.id, newTitle.trim());
-        Alert.alert('Success', 'Title updated.');
+        Alert.alert("Success", "Title updated.");
         fetchHistory(); // Refresh the list
         setIsEditingTitle(false);
         setCurrentEditItem(null);
       } catch (error) {
-        console.error('Error updating title:', error);
-        Alert.alert('Error', 'Failed to update title.');
+        console.error("Error updating title:", error);
+        Alert.alert("Error", "Failed to update title.");
       }
     } else {
       setIsEditingTitle(false);
@@ -123,16 +122,16 @@ const HistoryScreen = ({
       type: item.outputType,
       title: item.title,
     });
-    setCurrentScreen('ProcessedOutput');
+    setCurrentScreen("ProcessedOutput");
   };
 
   const getDocumentIcon = (outputType) => {
     switch (outputType) {
-      case 'csv':
+      case "csv":
         return spreadsheetIconPlaceholder;
-      case 'markdown':
+      case "markdown":
         return markdownIconPlaceholder;
-      case 'text':
+      case "text":
       default:
         return documentIconPlaceholder;
     }
@@ -140,10 +139,10 @@ const HistoryScreen = ({
 
   const formatDate = (isoString) => {
     const date = new Date(isoString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
     });
   };
 
@@ -164,42 +163,70 @@ const HistoryScreen = ({
         }
       >
         {historyItems.length === 0 ? (
-          <Text style={styles.emptyHistoryText}>No processed documents yet.</Text>
+          <Text style={styles.emptyHistoryText}>
+            No processed documents yet.
+          </Text>
         ) : (
           historyItems.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.historyItem}
-              onPress={() => handleViewContent(item)}
-            >
-              <Image source={getDocumentIcon(item.outputType)} style={styles.documentIcon} />
-              <View style={styles.itemTextContainer}>
-                <Text style={styles.itemTitle}>{item.title}</Text>
-                <Text style={styles.itemDate}>Processed on {formatDate(item.processedDate)}</Text>
-              </View>
+            // Add a wrapper View for each history item to act as a relative parent
+            <View key={item.id} style={styles.historyItemWrapper}>
+              {/* This TouchableOpacity now contains only the visible row content */}
               <TouchableOpacity
-                style={styles.moreOptionsButton}
-                onPress={() => {
-                  setDropdownItemId(item.id);
-                  setShowDropdown(!showDropdown);
-                }}
+                style={styles.historyItem} // These styles will now apply to this TouchableOpacity
+                onPress={() => handleViewContent(item)}
               >
-                <Ionicons name="ellipsis-horizontal" size={24} color={COLORS.darkText} />
+                <Image
+                  source={getDocumentIcon(item.outputType)}
+                  style={styles.documentIcon}
+                />
+                <View style={styles.itemTextContainer}>
+                  <Text style={styles.itemTitle}>{item.title}</Text>
+                  <Text style={styles.itemDate}>
+                    Processed on {formatDate(item.processedDate)}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.moreOptionsButton}
+                  onPress={() => {
+                    // Toggle the dropdown for this specific item
+                    setDropdownItemId(
+                      dropdownItemId === item.id ? null : item.id
+                    );
+                  }}
+                >
+                  <Ionicons
+                    name="ellipsis-horizontal"
+                    size={24}
+                    color={COLORS.darkText}
+                  />
+                </TouchableOpacity>
               </TouchableOpacity>
-              {showDropdown && dropdownItemId === item.id && (
+
+              {/* The dropdown menu is now a sibling to the TouchableOpacity */}
+              {dropdownItemId === item.id && (
                 <View style={styles.dropdownMenu}>
-                  <TouchableOpacity style={styles.dropdownItem} onPress={() => handleViewContent(item)}>
+                  {/* Ensure clicking a dropdown item closes the dropdown */}
+                  <TouchableOpacity
+                    style={styles.dropdownItem}
+                    onPress={() => handleViewContent(item)}
+                  >
                     <Text style={styles.dropdownItemText}>View</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.dropdownItem} onPress={() => handleEditTitle(item)}>
+                  <TouchableOpacity
+                    style={styles.dropdownItem}
+                    onPress={() => handleEditTitle(item)}
+                  >
                     <Text style={styles.dropdownItemText}>Edit Title</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.dropdownItem} onPress={() => handleDelete(item.id)}>
+                  <TouchableOpacity
+                    style={styles.dropdownItem}
+                    onPress={() => handleDelete(item.id)}
+                  >
                     <Text style={styles.dropdownItemText}>Delete</Text>
                   </TouchableOpacity>
                 </View>
               )}
-            </TouchableOpacity>
+            </View>
           ))
         )}
       </ScrollView>
@@ -226,10 +253,16 @@ const HistoryScreen = ({
               autoFocus
             />
             <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.modalButtonCancel} onPress={() => setIsEditingTitle(false)}>
+              <TouchableOpacity
+                style={styles.modalButtonCancel}
+                onPress={() => setIsEditingTitle(false)}
+              >
                 <Text style={styles.modalButtonTextCancel}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.modalButtonSave} onPress={handleSaveTitle}>
+              <TouchableOpacity
+                style={styles.modalButtonSave}
+                onPress={handleSaveTitle}
+              >
                 <Text style={styles.modalButtonTextSave}>Save</Text>
               </TouchableOpacity>
             </View>
@@ -246,44 +279,44 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primaryBackground,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 8,
     backgroundColor: COLORS.primaryBackground,
   },
   headerTitle: {
-    fontFamily: 'Inter-Bold',
+    fontFamily: "Inter-Bold",
     fontSize: 18,
     lineHeight: 23,
     color: COLORS.darkText,
     flex: 1, // Allows title to center if list icon is on the right
-    textAlign: 'center',
+    textAlign: "center",
     marginLeft: 48, // Offset for potential left icon if needed
     marginRight: 24, // Matches right icon width roughly
   },
   listIconContainer: {
     width: 48,
     height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   scrollViewContent: {
     paddingBottom: 95, // Space for bottom nav bar
   },
   emptyHistoryText: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: "Inter-Regular",
     fontSize: 16,
     color: COLORS.inactiveIcon,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 50,
   },
   historyItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: 8,
     paddingHorizontal: 16,
     backgroundColor: COLORS.white,
@@ -296,23 +329,23 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 8,
-    backgroundColor: '#DDCBAA', // A light beige/orange background as seen in Figma for document icons
-    justifyContent: 'center',
-    alignItems: 'center',
-    resizeMode: 'contain', // Ensure icon fits
+    backgroundColor: "#DDCBAA", // A light beige/orange background as seen in Figma for document icons
+    justifyContent: "center",
+    alignItems: "center",
+    resizeMode: "contain", // Ensure icon fits
   },
   itemTextContainer: {
     flex: 1, // Take available space
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   itemTitle: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: "Inter-Medium",
     fontSize: 16,
     lineHeight: 24,
     color: COLORS.darkText,
   },
   itemDate: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: "Inter-Regular",
     fontSize: 14,
     lineHeight: 21,
     color: COLORS.inactiveIcon,
@@ -320,12 +353,12 @@ const styles = StyleSheet.create({
   moreOptionsButton: {
     width: 28, // Figma size for ellipsis container
     height: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative', // For dropdown positioning
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative", // For dropdown positioning
   },
   dropdownMenu: {
-    position: 'absolute',
+    position: "absolute",
     top: 30, // Position below the ellipsis icon
     right: 0,
     backgroundColor: COLORS.white,
@@ -344,25 +377,25 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.borderColor,
   },
   dropdownItemText: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: "Inter-Regular",
     fontSize: 16,
     color: COLORS.darkText,
   },
   modalBackground: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)', // Dim background
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)", // Dim background
   },
   modalContent: {
     backgroundColor: COLORS.white,
     borderRadius: 12,
     padding: 20,
-    width: '80%',
-    alignItems: 'center',
+    width: "80%",
+    alignItems: "center",
   },
   modalTitle: {
-    fontFamily: 'Inter-Bold',
+    fontFamily: "Inter-Bold",
     fontSize: 20,
     marginBottom: 15,
     color: COLORS.darkText,
@@ -372,16 +405,16 @@ const styles = StyleSheet.create({
     borderColor: COLORS.borderColor,
     borderRadius: 8,
     padding: 12,
-    width: '100%',
-    fontFamily: 'Inter-Regular',
+    width: "100%",
+    fontFamily: "Inter-Regular",
     fontSize: 16,
     color: COLORS.darkText,
     marginBottom: 20,
   },
   modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
   },
   modalButtonCancel: {
     backgroundColor: COLORS.lightBlueBackground,
@@ -396,11 +429,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   modalButtonTextCancel: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: "Inter-Medium",
     color: COLORS.darkText,
   },
   modalButtonTextSave: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: "Inter-Medium",
     color: COLORS.white,
   },
 });

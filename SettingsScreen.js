@@ -129,7 +129,7 @@ const handleSelectAIModel = async (modelName) => { // Make this function async
   };
 
   const handleContactUs = () => {
-    Alert.alert('Contact Us', 'For support, please email support@glyphify.com');
+    Alert.alert('About Us', 'Glyphify is a cutting-edge mobile application designed to revolutionize the way teachers and students handle information. By leveraging intelligent AI, Glyphify effortlessly extracts text from documents, converting handwritten notes and printed materials into editable digital text. Teachers and professors can say goodbye to the tedious task of manually entering handwritten data into spreadsheets, streamlining their workflow and saving valuable time. Students can capture images of whiteboards or even their own incomplete notes, and Glyphify will generate comprehensive and accurate study materials. Glyphify is the ultimate tool for enhanced productivity and efficient learning, bridging the gap between the physical and digital worlds for both educators and learners');
   };
 
   return (
@@ -245,14 +245,14 @@ const handleSelectAIModel = async (modelName) => { // Make this function async
           <View style={styles.aboutIconContainer}>
             <Ionicons name="help-circle-outline" size={24} color={COLORS.darkerText} />
           </View>
-          <Text style={styles.contactUsText}>Contact Us</Text>
+          <Text style={styles.contactUsText}>About Us</Text>
         </TouchableOpacity>
-      </ScrollView>
-
       {/* Developed by */}
       <View style={styles.developedByContainer}>
-        <Text style={styles.developedByText}>Developed by</Text>
+        <Text style={styles.developedByText}>Developed by Atharva Jagtap</Text>
       </View>
+      </ScrollView>
+
     </View>
   );
 };
@@ -434,12 +434,12 @@ const styles = StyleSheet.create({
   // Developed by
   developedByContainer: {
     marginTop: 'auto',
-    paddingVertical: 20,
-    alignItems: 'center',
+    paddingTop: 80,
+    alignItems: 'center'
   },
   developedByText: {
     fontFamily: 'Inter-Regular',
-    fontSize: 16,
+    fontSize: 14,
     lineHeight: 24,
     textAlign: 'center',
     color: COLORS.developedByText,

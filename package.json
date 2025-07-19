@@ -16,15 +16,18 @@
     "expo-file-system": "~18.1.11",
     "expo-font": "~13.3.2",
     "expo-print": "~14.1.4",
+    "expo-secure-store": "~14.2.3",
     "expo-sharing": "~13.1.5",
     "expo-splash-screen": "~0.30.10",
     "expo-sqlite": "~15.2.14",
     "expo-status-bar": "~2.2.3",
     "expo-system-ui": "~5.0.10",
+    "katex": "^0.16.22",
+    "markdown-it": "^14.1.0",
+    "markdown-it-katex": "^2.0.3",
     "react": "19.0.0",
     "react-native": "0.79.5",
-    "react-native-markdown-display": "^7.0.2",
-    "expo-secure-store": "~14.2.3"
+    "react-native-webview": "13.13.5"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

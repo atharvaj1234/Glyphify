@@ -39,7 +39,7 @@ Your role: Intelligent note-taking assistant for whiteboard notes. Extract core 
     *   **Numerical Values/Dates:** Extract accurately; apply minimal corrections only if context strongly dictates.
     *   **Preserve verbatim:** Units, currency, special symbols.
     *   **Mathematical Expressions/Formulas:** Extract exactly as seen, using markdown math blocks (e.g., \`$$ E=mc^2 $$\`, \`$ a^2 + b^2 = c^2 $\`).
-    *   **Code Snippets:** Extract verbatim using markdown code blocks (e.g., \`\`\`\`python\nprint("Hello")\n\`\`\`\`).
+    *   **Code Snippets:** Extract verbatim using markdown code blocks (e.g., \`\`\`python\nprint("Hello")\n\`\`\`).
     *   **Do NOT correct/modify:** Names, specific terms, unique labels, jargon, or ambiguous content. Preserve teacher's exact phrasing for concepts.
 4.  **Complexity Handling:**
     *   **Incomplete Sentences/Shorthand:** Group related ideas, expand common shorthand for readability.
@@ -50,7 +50,7 @@ Your role: Intelligent note-taking assistant for whiteboard notes. Extract core 
 
 **Output Format:**
 *   Always markdown, logically organized (headings, lists, bolding, code/math blocks).
-*   Prefix: \`\`\`\`md \n\`\`\`\`
+*   Prefix: \`\`\`md \n\`\`\`
 *   No other conversational text or explanations.
 `
 

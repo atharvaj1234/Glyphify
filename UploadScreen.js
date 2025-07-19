@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -8,143 +8,170 @@ import {
   Platform,
   Alert,
   TextInput,
-  KeyboardAvoidingView
-} from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import * as DocumentPicker from 'expo-document-picker'; // Import DocumentPicker
-import { COLORS } from './constants/colors';
+  KeyboardAvoidingView,
+} from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import * as DocumentPicker from "expo-document-picker"; // Import DocumentPicker
+import { COLORS } from "./constants/colors";
 
-const UploadScreen = ({ setCurrentScreen, setSelectedFile, setActiveTab, activeTab, setAdditionalInstructions, additionalInstructions }) => {
-//   const [activeTab, setActiveTab] = useState('Generate Notes'); // State for the toggle button
+const UploadScreen = ({
+  setCurrentScreen,
+  setSelectedFile,
+  setActiveTab,
+  activeTab,
+  setAdditionalInstructions,
+  additionalInstructions,
+}) => {
+  //   const [activeTab, setActiveTab] = useState('Generate Notes'); // State for the toggle button
 
   const pickDocument = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf', 'image/jpeg', 'image/png'], // Accepted formats
+        type: ["application/pdf", "image/jpeg", "image/png"], // Accepted formats
         copyToCacheDirectory: true, // Important for accessing the file URI
       });
 
       if (result.canceled) {
-        console.log('Document picking cancelled.');
+        console.log("Document picking cancelled.");
         return;
       }
 
       const file = result.assets[0]; // Access the first selected asset
-      console.log('Selected file:', file);
+      console.log("Selected file:", file);
 
       // Set the selected file state and navigate to Processing screen
       setSelectedFile(file);
-      setCurrentScreen('Processing');
-
     } catch (err) {
-      console.error('Error picking document:', err);
-      Alert.alert('Error', 'Failed to pick document. Please try again.');
+      console.error("Error picking document:", err);
+      Alert.alert("Error", "Failed to pick document. Please try again.");
     }
   };
 
+  const handleNext = async () => {
+      setCurrentScreen("Processing");
+  }
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButtonContainer} onPress={() => setCurrentScreen('Home')}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.darkText} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Upload</Text>
-        {/* Placeholder for right-side alignment or empty space */}
-        <View style={styles.backButtonContainer} />
-      </View>
-
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoidingContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} // 'padding' for iOS, 'height' or 'position' for Android
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 10} // Adjust offset if header is fixed
-      >
-      <ScrollView contentContainerStyle={styles.scrollViewContent}>
-        {/* Main Title */}
-        <View style={styles.mainTitleContainer}>
-          <Text style={styles.mainTitle}>Upload your notes</Text>
+    <ScrollView contentContainerStyle={styles.scrollViewContent}>
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButtonContainer}
+            onPress={() => setCurrentScreen("Home")}
+          >
+            <Ionicons name="arrow-back" size={24} color={COLORS.darkText} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Upload</Text>
+          {/* Placeholder for right-side alignment or empty space */}
+          <View style={styles.backButtonContainer} />
         </View>
-
-        {/* Description */}
-        <View style={styles.descriptionContainer}>
-          <Text style={styles.description}>
-            Upload your handwritten notes or documents for precise OCR.
-          </Text>
-        </View>
-
-        {/* Toggle Button (Generate Notes / Extract Text) */}
-        <View style={styles.toggleContainer}>
-          <View style={styles.toggleBackground}>
-            <TouchableOpacity
-              style={[
-                styles.toggleButton,
-                activeTab === 'Generate Notes' && styles.toggleButtonActive,
-              ]}
-              onPress={() => setActiveTab('Generate Notes')}
-            >
-              <Text
-                style={[
-                  styles.toggleButtonText,
-                  activeTab === 'Generate Notes' && styles.toggleButtonTextActive,
-                ]}
-              >
-                Generate Notes
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.toggleButton,
-                activeTab === 'Extract Text' && styles.toggleButtonActive,
-              ]}
-              onPress={() => setActiveTab('Extract Text')}
-            >
-              <Text
-                style={[
-                  styles.toggleButtonText,
-                  activeTab === 'Extract Text' && styles.toggleButtonTextActive,
-                ]}
-              >
-                Extract Text
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Drag and Drop Area */}
-        <View style={styles.uploadAreaContainer}>
-          <View style={styles.dashedBorderBox}>
-            <View style={styles.uploadTextContainer}>
-              <Text style={styles.uploadTextTitle}>Drag and drop files here</Text>
-              <Text style={styles.uploadTextOr}>Or</Text>
+        <KeyboardAvoidingView
+          style={styles.keyboardAvoidingContainer}
+          behavior={Platform.OS === "ios" ? "padding" : "height"} // 'padding' for iOS, 'height' or 'position' for Android
+          keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 10} // Adjust offset if header is fixed
+        >
+          <ScrollView contentContainerStyle={styles.scrollViewContent}>
+            {/* Main Title */}
+            <View style={styles.mainTitleContainer}>
+              <Text style={styles.mainTitle}>Upload your notes</Text>
             </View>
-            <TouchableOpacity style={styles.browseFilesButton} onPress={pickDocument}>
-              <Text style={styles.browseFilesButtonText}>Browse Files</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
 
-        {/* Accepted Formats Info */}
-        <View style={styles.formatsInfoContainer}>
-          <Text style={styles.formatsInfoText}>
-            Accepted formats: PDF, JPG, PNG | Max size: 10MB
-          </Text>
-        </View>
+            {/* Description */}
+            <View style={styles.descriptionContainer}>
+              <Text style={styles.description}>
+                Upload your handwritten notes or documents for precise OCR.
+              </Text>
+            </View>
 
-        {/* Additional Instructions Text Box */}
-        <View style={styles.instructionsContainer}>
-          <Text style={styles.instructionsTitle}>Additional Instructions (Optional)</Text>
-          <TextInput
-            style={styles.instructionsInput}
-            multiline
-            placeholder="e.g., 'Extract names and marks', 'Focus on chapter 3', 'Ignore images'"
-            placeholderTextColor={COLORS.inactiveIcon}
-            value={additionalInstructions}
-            onChangeText={setAdditionalInstructions}
-          />
-        </View>
-      </ScrollView>
-      </KeyboardAvoidingView>
-    </View>
+            {/* Toggle Button (Generate Notes / Extract Text) */}
+            <View style={styles.toggleContainer}>
+              <View style={styles.toggleBackground}>
+                <TouchableOpacity
+                  style={[
+                    styles.toggleButton,
+                    activeTab === "Generate Notes" && styles.toggleButtonActive,
+                  ]}
+                  onPress={() => setActiveTab("Generate Notes")}
+                >
+                  <Text
+                    style={[
+                      styles.toggleButtonText,
+                      activeTab === "Generate Notes" &&
+                        styles.toggleButtonTextActive,
+                    ]}
+                  >
+                    Generate Notes
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.toggleButton,
+                    activeTab === "Extract Text" && styles.toggleButtonActive,
+                  ]}
+                  onPress={() => setActiveTab("Extract Text")}
+                >
+                  <Text
+                    style={[
+                      styles.toggleButtonText,
+                      activeTab === "Extract Text" &&
+                        styles.toggleButtonTextActive,
+                    ]}
+                  >
+                    Extract Text
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Drag and Drop Area */}
+            <View style={styles.uploadAreaContainer}>
+              <View style={styles.dashedBorderBox}>
+                <View style={styles.uploadTextContainer}>
+                  <Text style={styles.uploadTextTitle}>
+                    Drag and drop files here
+                  </Text>
+                  <Text style={styles.uploadTextOr}>Or</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.browseFilesButton}
+                  onPress={pickDocument}
+                >
+                  <Text style={styles.browseFilesButtonText}>Browse Files</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Accepted Formats Info */}
+            <View style={styles.formatsInfoContainer}>
+              <Text style={styles.formatsInfoText}>
+                Accepted formats: PDF, JPG, PNG | Max size: 10MB
+              </Text>
+            </View>
+
+            {/* Additional Instructions Text Box */}
+            <View style={styles.instructionsContainer}>
+              <Text style={styles.instructionsTitle}>
+                Additional Instructions (Optional)
+              </Text>
+              <TextInput
+                style={styles.instructionsInput}
+                multiline
+                placeholder="e.g., 'Extract names and marks', 'Focus on chapter 3', 'Ignore images'"
+                placeholderTextColor={COLORS.inactiveIcon}
+                value={additionalInstructions}
+                onChangeText={setAdditionalInstructions}
+              />
+                  <TouchableOpacity
+                      style={styles.nextButton}
+                      onPress={handleNext}
+                  >
+                      <Text style={styles.nextButtonText}>Start</Text>
+                  </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </View>
+    </ScrollView>
   );
 };
 
@@ -154,9 +181,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primaryBackground,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 8,
@@ -165,54 +192,54 @@ const styles = StyleSheet.create({
   backButtonContainer: {
     width: 48,
     height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerTitle: {
-    fontFamily: 'Inter-Bold',
+    fontFamily: "Inter-Bold",
     fontSize: 18,
     lineHeight: 23,
     color: COLORS.darkText,
     flex: 1,
-    textAlign: 'center',
+    textAlign: "center",
   },
   scrollViewContent: {
     paddingBottom: 95, // Account for the bottom navigation bar
   },
   mainTitleContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingTop: 20,
     paddingHorizontal: 16,
     paddingBottom: 12,
   },
   mainTitle: {
-    fontFamily: 'Inter-Bold',
+    fontFamily: "Inter-Bold",
     fontSize: 28,
     lineHeight: 35,
-    textAlign: 'center',
+    textAlign: "center",
     color: COLORS.darkText,
   },
   descriptionContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingTop: 4,
     paddingHorizontal: 16,
     paddingBottom: 12,
   },
   description: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: "Inter-Regular",
     fontSize: 16,
     lineHeight: 24,
-    textAlign: 'center',
+    textAlign: "center",
     color: COLORS.darkText,
   },
   toggleContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
   toggleBackground: {
-    flexDirection: 'row',
+    flexDirection: "row",
     backgroundColor: COLORS.lightBlueBackground,
     borderRadius: 8,
     padding: 4,
@@ -220,8 +247,8 @@ const styles = StyleSheet.create({
   },
   toggleButton: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingVertical: 8,
     paddingHorizontal: 8,
     borderRadius: 8,
@@ -235,7 +262,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   toggleButtonText: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: "Inter-Medium",
     fontSize: 14,
     lineHeight: 21,
     color: COLORS.inactiveIcon,
@@ -248,30 +275,30 @@ const styles = StyleSheet.create({
   },
   dashedBorderBox: {
     borderWidth: 2,
-    borderStyle: 'dashed',
+    borderStyle: "dashed",
     borderColor: COLORS.dashedBorder,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 56,
     paddingHorizontal: 24,
     gap: 24,
   },
   uploadTextContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: 8,
   },
   uploadTextTitle: {
-    fontFamily: 'Inter-Bold',
+    fontFamily: "Inter-Bold",
     fontSize: 18,
     lineHeight: 23,
-    textAlign: 'center',
+    textAlign: "center",
     color: COLORS.darkText,
   },
   uploadTextOr: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: "Inter-Regular",
     fontSize: 14,
     lineHeight: 21,
-    textAlign: 'center',
+    textAlign: "center",
     color: COLORS.darkText,
   },
   browseFilesButton: {
@@ -279,37 +306,39 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     minWidth: 84,
     height: 40,
   },
   browseFilesButtonText: {
-    fontFamily: 'Inter-Bold',
+    fontFamily: "Inter-Bold",
     fontSize: 14,
     lineHeight: 21,
-    textAlign: 'center',
+    textAlign: "center",
     color: COLORS.darkText,
   },
   formatsInfoContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingTop: 4,
     paddingHorizontal: 16,
     paddingBottom: 12,
   },
   formatsInfoText: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: "Inter-Regular",
     fontSize: 16,
     lineHeight: 24,
-    textAlign: 'center',
+    textAlign: "center",
     color: COLORS.darkText,
   },
   instructionsContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
+    display:'flex',
+    alignItems: 'center'
   },
   instructionsTitle: {
-    fontFamily: 'Inter-Bold',
+    fontFamily: "Inter-Bold",
     fontSize: 16,
     lineHeight: 24,
     color: COLORS.darkText,
@@ -321,12 +350,28 @@ const styles = StyleSheet.create({
     borderColor: COLORS.dashedBorder,
     borderRadius: 8,
     padding: 12,
-    fontFamily: 'Inter-Regular',
+    fontFamily: "Inter-Regular",
     fontSize: 16,
     lineHeight: 24,
     color: COLORS.darkText,
     backgroundColor: COLORS.primaryBackground,
-    textAlignVertical: 'top', // Aligns text to the top for multiline input
+    textAlignVertical: "top", // Aligns text to the top for multiline input
+  },
+    nextButton: {
+    backgroundColor: COLORS.onboardingBlue,
+    borderRadius: 24,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '70%',
+    paddingHorizontal: 20,
+    margin: 12,
+  },
+  nextButtonText: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    lineHeight: 24,
+    color: COLORS.blueButtonText,
   },
 });
 

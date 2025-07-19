@@ -12,18 +12,21 @@ import {
   Platform,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import Markdown from 'react-native-markdown-display';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
-import MarkdownIt from 'markdown-it'; // ✅ New dependency
+import MarkdownIt from 'markdown-it';
+import MarkdownItKatex from 'markdown-it-katex';
+
+// ✅ Import WebView for in-app math rendering
+import WebView from 'react-native-webview';
 
 import { COLORS } from './constants/colors';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-// Initialize pure‑JS markdown converter
-const mdParser = new MarkdownIt();
+// Initialize pure‑JS markdown converter with KaTeX plugin
+const mdParser = new MarkdownIt().use(MarkdownItKatex);
 
 const ProcessedOutputScreen = ({
   setCurrentScreen,
@@ -35,10 +38,201 @@ const ProcessedOutputScreen = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editableTitle, setEditableTitle] = useState(processedOutput?.title || 'Untitled Document');
+  const [markdownHtmlForWebView, setMarkdownHtmlForWebView] = useState('');
 
   const outputText = processedOutput?.text || 'No content to display.';
   const outputType = processedOutput?.type || 'text';
   const documentId = processedOutput?.id;
+
+  // Generate HTML for WebView and PDF
+  const getFullMarkdownHtml = (content, type, title) => {
+    const titleHtml = `<h1 style="font-family:'Inter-Bold'; font-size:24px; color:${COLORS.darkText}; margin-bottom:15px;">${title}</h1>`;
+    const vsCodeMarkdownCss = `
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+      <style>
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", system-ui, "Ubuntu", "Droid Sans", sans-serif;
+          font-size: 16px;
+          line-height: 1.6;
+          color: #24292e;
+          padding: 20px;
+          margin: 0 auto;
+        }
+        h1, h2, h3, h4, h5, h6 {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", system-ui, "Ubuntu", "Droid Sans", sans-serif;
+          color: #000;
+          margin-top: 1.5em;
+          margin-bottom: 0.5em;
+          font-weight: 600;
+        }
+        h1 { font-size: 2.2em; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
+        h2 { font-size: 1.8em; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
+        h3 { font-size: 1.4em; }
+        h4 { font-size: 1.2em; }
+        h5 { font-size: 1.1em; }
+        h6 { font-size: 1em; color: #586069; }
+
+        p { margin-bottom: 1em; }
+
+        a { color: #0366d6; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        strong { font-weight: 700; }
+        em { font-style: italic; }
+
+        ul, ol {
+          margin-top: 0;
+          margin-bottom: 1em;
+          padding-left: 2em;
+        }
+        li { margin-bottom: 0.5em; }
+
+        blockquote {
+          color: #586069;
+          margin: 1em 0;
+          padding: 0 1em;
+          border-left: 0.25em solid #dfe2e5;
+          background-color: #f6f8fa;
+        }
+
+        pre {
+          background-color: #f6f8fa;
+          padding: 12px;
+          border-radius: 6px;
+          overflow-x: auto;
+          font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, Courier, monospace;
+          font-size: 0.9em;
+          line-height: 1.4;
+          white-space: pre-wrap;
+          word-break: break-all;
+        }
+        code {
+          font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, Courier, monospace;
+          background-color: rgba(27,31,35,.05);
+          padding: 0.2em 0.4em;
+          border-radius: 3px;
+        }
+        pre code {
+          background-color: transparent;
+          padding: 0;
+          border-radius: 0;
+          white-space: pre;
+        }
+
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 1em;
+        }
+        th, td {
+          border: 1px solid #dfe2e5;
+          padding: 8px;
+          text-align: left;
+        }
+        th {
+          background-color: #f6f8fa;
+          font-weight: 600;
+        }
+
+        img {
+          max-width: 100%;
+          box-sizing: border-box;
+        }
+
+        hr {
+          height: 0.25em;
+          padding: 0;
+          margin: 24px 0;
+          background-color: #e1e4e8;
+          border: 0;
+        }
+
+        /* KaTeX specific styling */
+        .katex { font-size: 1.1em; }
+        .katex-display {
+          margin: 1em;
+          overflow-x: auto;
+          overflow-y: hidden;
+          text-align: left;
+        }
+        .katex-html {
+          white-space: nowrap;
+          padding: 0.7em;
+        }
+        
+        .katex .script, .katex .scriptstyle {
+          font-size: 0.7em !important; /* Smaller size for basic scripts */
+          line-height: 1.2 !important; /* Adjust line height for better vertical alignment */
+          margin: 0em;
+          padding: 0em;
+        }
+        .katex .script.scriptstyle {
+          font-size: 0.5em !important; /* Even smaller for nested scripts */
+          padding: 0em;
+          margin: 0em;
+        }
+        .katex .frac-line {
+          border-bottom-width: 1px !important;
+          border-color: currentColor !important;
+          padding: 0em;
+          margin: 0em;
+        }
+      </style>
+    `;
+
+    let htmlContent = '';
+    if (type === 'markdown') {
+      htmlContent = mdParser.render(content);
+    } else if (type === 'csv') {
+      const rows = content.split('\n').map(r => r.split(','));
+      htmlContent = '<table style="border-collapse:collapse;width:100%;">' +
+        rows.map((row, i) => '<tr>' +
+          row.map(cell => `<${i===0?'th':'td'} style="border:1px solid #ddd;padding:8px;text-align:left;">${cell.trim()}</${i===0?'th':'td'}>`).join('') +
+        '</tr>').join('') + '</table>';
+    } else {
+      htmlContent = `<p>${content.replace(/\n/g,'<br/>')}</p>`;
+    }
+
+    return `<!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>${title}</title>
+                ${vsCodeMarkdownCss}
+            </head>
+            <body>
+                ${titleHtml}
+                ${htmlContent}
+                <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+                <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+                <script>
+                    document.addEventListener("DOMContentLoaded", function() {
+                        renderMathInElement(document.body, {
+                            delimiters: [
+                                {left: '$$', right: '$$', display: true},
+                                {left: '$', right: '$', display: false},
+                                {left: '\\(', right: '\\)', display: false},
+                                {left: '\\[', right: '\\]', display: true}
+                            ],
+                            throwOnError : false
+                        });
+                    });
+                </script>
+            </body>
+            </html>`;
+  };
+
+  React.useEffect(() => {
+    if (outputType === 'markdown') {
+      // Pass outputType to getFullMarkdownHtml as well
+      setMarkdownHtmlForWebView(getFullMarkdownHtml(outputText, outputType, editableTitle));
+    }
+  }, [outputText, editableTitle, outputType]);
+
+  const generateHtmlForPdf = (content, type, title) => {
+    return getFullMarkdownHtml(content, type, title);
+  };
 
   const handleSaveEditedTitle = async () => {
     if (!editableTitle.trim()) {
@@ -86,45 +280,19 @@ const ProcessedOutputScreen = ({
     );
   };
 
-  // Prepare HTML for PDF export
-  const generateHtmlForPdf = (content, type) => {
-    const titleHtml = `<h1 style="font-family:'Inter-Bold'; font-size:24px; color:${COLORS.darkText}; margin-bottom:15px;">${editableTitle}</h1>`;
-    const basicStyles = `
-      <style>
-        body { font-family:'Inter-Regular'; font-size:16px; color:${COLORS.darkText}; padding:20px; line-height:1.5; }
-        h1,h2,h3,h4,h5,h6 { font-family:'Inter-Bold'; color:${COLORS.darkText}; margin-top:1em; margin-bottom:0.5em; }
-        pre { background:#f8f8f8; padding:10px; border:1px solid #ddd; border-radius:5px; overflow-x:auto; }
-        code { background:#eee; padding:2px 4px; border-radius:3px; }
-      </style>
-    `;
-    let htmlContent = '';
-    if (type === 'markdown') {
-      htmlContent = mdParser.render(content);
-    } else if (type === 'csv') {
-      const rows = content.split('\n').map(r => r.split(','));
-      htmlContent = '<table style="border-collapse:collapse;width:100%;">' +
-        rows.map((row, i) => '<tr>' +
-          row.map(cell => `<${i===0?'th':'td'} style="border:1px solid #ddd;padding:8px;text-align:left;">${cell.trim()}</${i===0?'th':'td'}>`).join('') +
-        '</tr>').join('') + '</table>';
-    } else {
-      htmlContent = `<p>${content.replace(/\n/g,'<br/>')}</p>`;
-    }
-    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${editableTitle}</title>${basicStyles}</head><body>${titleHtml}${htmlContent}</body></html>`;
-  };
-
   const exportFile = async (format) => {
     setShowDropdown(false);
     try {
       let uri, filename = editableTitle.replace(/[^a-z0-9]/gi,'_').toLowerCase(), mime;
       if (format === 'pdf') {
-        const html = generateHtmlForPdf(outputText, outputType);
+        const html = generateHtmlForPdf(outputText, outputType, editableTitle);
         const result = await Print.printToFileAsync({ html });
         uri = result.uri; filename += '.pdf'; mime = 'application/pdf';
       } else {
         const ext = format === 'excel' ? 'csv' : format;
         uri = `${FileSystem.documentDirectory}${filename}.${ext}`;
         await FileSystem.writeAsStringAsync(uri, outputText);
-        mime = format === 'markdown' ? 'text/markdown' : format === 'csv' || format==='excel' ? 'text/csv' : 'text/plain';
+        mime = format === 'markdown' ? 'text/markdown' : (format === 'csv' || format === 'excel' ? 'text/csv' : 'text/plain');
         filename += `.${ext}`;
         if (format === 'excel') Alert.alert('Export to Excel','Saved as CSV—compatible with Excel.');
       }
@@ -148,14 +316,122 @@ const ProcessedOutputScreen = ({
 
   const renderContent = () => {
     if (outputType === 'markdown') {
-      return <ScrollView horizontal contentContainerStyle={styles.markdownScrollContent}><Markdown style={markdownStyles}>{outputText}</Markdown></ScrollView>;
+      return (
+        <View style={styles.webViewContainer}>
+          {markdownHtmlForWebView ? (
+            <WebView
+              originWhitelist={['*']}
+              source={{ html: markdownHtmlForWebView }}
+              style={styles.webView}
+              scalesPageToFit={Platform.OS === 'android'}
+              scrollEnabled={true}
+              javaScriptEnabled={true} // Explicitly ensure JS is enabled
+              domStorageEnabled={true} // Enable DOM storage
+              // ✅ Add debugging props for WebView
+              onLoadEnd={() => console.log('WebView finished loading HTML')}
+              onError={(syntheticEvent) => {
+                const { nativeEvent } = syntheticEvent;
+                console.warn('WebView error: ', nativeEvent.code, nativeEvent.description, nativeEvent.url);
+              }}
+              onHttpError={(syntheticEvent) => {
+                const { nativeEvent } = syntheticEvent;
+                console.warn('WebView HTTP error: ', nativeEvent.statusCode, nativeEvent.description, nativeEvent.url);
+              }}
+              // This is useful for catching console.log from the WebView's JS context
+              onMessage={(event) => {
+                try {
+                  const message = JSON.parse(event.nativeEvent.data);
+                  console.log('WebView Console:', message);
+                } catch (e) {
+                  console.log('WebView Raw Message:', event.nativeEvent.data);
+                }
+              }}
+              // Inject a script to capture console.log from the WebView
+              injectedJavaScript={`
+                (function() {
+                  var originalLog = console.log;
+                  console.log = function(message) {
+                    window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'log', message: message }));
+                    originalLog.apply(console, arguments);
+                  };
+                  var originalError = console.error;
+                  console.error = function(message) {
+                    window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'error', message: message }));
+                    originalError.apply(console, arguments);
+                  };
+                })();
+                // Also, trigger math rendering explicitly just in case DOMContentLoaded fires too early in some cases
+                if (window.renderMathInElement) {
+                    renderMathInElement(document.body, {
+                        delimiters: [
+                            {left: '$$', right: '$$', display: true},
+                            {left: '$', right: '$', display: false},
+                            {left: '\\(', right: '\\)', display: false},
+                            {left: '\\[', right: '\\]', display: true}
+                        ],
+                        throwOnError : false
+                    });
+                } else {
+                    window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'debug', message: 'renderMathInElement not found' }));
+                }
+              `}
+              renderLoading={() => <Text style={styles.contentText}>Loading Markdown Preview...</Text>}
+              startInLoadingState={true}
+            />
+          ) : (
+            <Text style={styles.contentText}>Preparing Markdown Preview...</Text>
+          )}
+        </View>
+      );
     }
-    if (outputType === 'csv') {
-      const rows = outputText.split('\n').map(r=>r.split(','));
-      const colCount = rows[0]?.length || 0;
-      const widths = rows.reduce((w,row)=>row.map((cell,i)=>Math.max(w[i]||0, cell.trim().length*8 + 16)), Array(colCount).fill(0));
-      const minW=80; for (let i=0;i<widths.length;i++) widths[i]=Math.max(widths[i],minW);
-      return <ScrollView horizontal contentContainerStyle={styles.csvScrollContent}><View style={styles.csvTable}>{rows.map((row,ri)=><View key={ri} style={styles.csvRow}>{row.map((cell,ci)=><Text key={ci} style={[ri===0?styles.csvHeaderCell:styles.csvCell,{width:widths[ci]}]} numberOfLines={1} ellipsizeMode="tail">{cell.trim()}</Text>)}</View>)}</View></ScrollView>;
+if (outputType === 'csv') {
+      const rows = outputText.split('\n').map((row) => row.split(','));
+
+      const numColumns = rows[0] ? rows[0].length : 0;
+      const calculatedColumnWidths = Array(numColumns).fill(0);
+
+      rows.forEach((row) => {
+        row.forEach((cellContent, colIndex) => {
+          const charWidthPx = 8;
+          const cellPaddingPx = 16;
+          const estimatedWidth = (cellContent ? cellContent.trim().length : 0) * charWidthPx + cellPaddingPx;
+
+          if (estimatedWidth > calculatedColumnWidths[colIndex]) {
+            calculatedColumnWidths[colIndex] = estimatedWidth;
+          }
+        });
+      });
+
+      const minColWidth = 80;
+      for (let i = 0; i < numColumns; i++) {
+        if (calculatedColumnWidths[i] < minColWidth) {
+          calculatedColumnWidths[i] = minColWidth;
+        }
+      }
+
+      return (
+        <ScrollView horizontal contentContainerStyle={styles.csvScrollContent}>
+          <View style={styles.csvTable}>
+            {rows.map((row, rowIndex) => (
+              <View key={rowIndex} style={styles.csvRow}>
+                {row.map((cell, cellIndex) => (
+                  <Text
+                    key={cellIndex}
+                    style={[
+                      rowIndex === 0 ? styles.csvHeaderCell : styles.csvCell,
+                      { width: calculatedColumnWidths[cellIndex] || minColWidth },
+                    ]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {cell.trim()}
+                  </Text>
+                ))}
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+      );
     }
     return <ScrollView horizontal contentContainerStyle={styles.textScrollContent}><Text style={styles.contentText}>{outputText}</Text></ScrollView>;
   };
@@ -225,67 +501,8 @@ const ProcessedOutputScreen = ({
   );
 };
 
-// Styles for Markdown rendering
-const markdownStyles = StyleSheet.create({
-  body: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 16,
-    lineHeight: 24,
-    color: COLORS.darkText,
-    width: screenWidth - 32,
-    flexShrink: 0,
-  },
-  heading1: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 28,
-    lineHeight: 35,
-    marginTop: 20,
-    marginBottom: 10,
-    color: COLORS.darkText,
-  },
-  heading2: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 22,
-    lineHeight: 28,
-    marginTop: 18,
-    marginBottom: 8,
-    color: COLORS.darkText,
-  },
-  heading3: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 18,
-    lineHeight: 23,
-    marginTop: 16,
-    marginBottom: 6,
-    color: COLORS.darkText,
-  },
-  bullet_list: {
-    marginBottom: 5,
-  },
-  list_item: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 16,
-    lineHeight: 24,
-    color: COLORS.darkText,
-  },
-  code_inline: {
-    fontFamily: 'monospace',
-    backgroundColor: '#eee',
-    paddingHorizontal: 4,
-    borderRadius: 3,
-  },
-  code_block: {
-    fontFamily: 'monospace',
-    backgroundColor: '#f8f8f8',
-    padding: 10,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    marginTop: 10,
-    marginBottom: 10,
-    minWidth: '100%',
-  },
-});
+// markdownStyles are not directly used anymore since WebView renders full HTML/CSS
+const markdownStyles = StyleSheet.create({ /* ... */ });
 
 const styles = StyleSheet.create({
   container: {
@@ -366,6 +583,16 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingTop: 4,
     paddingBottom: 12,
+    flex: 1,
+  },
+  webViewContainer: {
+    flex: 1,
+    minHeight: screenHeight * 0.5,
+    paddingHorizontal: 16,
+  },
+  webView: {
+    flex: 1,
+    backgroundColor: COLORS.primaryBackground,
   },
   markdownScrollContent: {
     flexGrow: 1,
@@ -384,9 +611,9 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     color: COLORS.darkText,
     width: screenWidth - 32,
+    padding:15,
     flexShrink: 0,
   },
-  // CSV Specific Styles
   csvTable: {
     borderWidth: 1,
     borderColor: COLORS.borderColor,

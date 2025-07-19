@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: COLORS.primaryBackground, // Changed to primaryBackground
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    paddingTop: Platform.OS === 'android' ? 15 : 0,
   },
   container: {
     flex: 1,
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
     color: COLORS.darkText,
     flex: 1,
     textAlign: 'center',
-    marginLeft: 48,
+    marginLeft: 70,
     marginRight: 24,
   },
   settingsIconContainer: {
