@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { Animated, Easing } from 'react-native';
 import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { GoogleGenAI, createPartFromUri, createUserContent } from '@google/genai';
@@ -11,6 +12,7 @@ import { NOTES_PROMPT, EXTRACTION_PROMPT, ADDITIONAL_INSTURCTION_PROMPT } from '
 const documentPlaceholderImage = require('./assets/document_placeholder.png');
 
 const ProcessingScreen = ({ setCurrentScreen, selectedFile, setProcessedOutput, geminiApiKey, addDocumentToHistory, setHistoryNeedsRefresh, selectedMode, selectedAIModel, additionalInstructions }) => {
+  const scanAnim = useRef(new Animated.Value(0)).current;
   const [processingProgress, setProcessingProgress] = useState(0);
   const [processingStatus, setProcessingStatus] = useState('Processing your document...');
   const [ai, setAi] = useState(null);
@@ -43,6 +45,30 @@ const ProcessingScreen = ({ setCurrentScreen, selectedFile, setProcessedOutput, 
         setProcessingStatus('Waiting for valid API Key...');
     }
   }, [selectedFile, ai]);
+
+  useEffect(() => {
+    if (processingProgress > 0 && processingProgress < 100) {
+      startScanningAnimation();
+    } else {
+      stopScanningAnimation();
+    }
+  }, [processingProgress]);
+
+  const startScanningAnimation = () => {
+    scanAnim.setValue(0);
+    Animated.loop(
+      Animated.timing(scanAnim, {
+        toValue: 1,
+        duration: 2000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    ).start();
+  };
+
+  const stopScanningAnimation = () => {
+    scanAnim.stopAnimation();
+  };
 
   const processDocument = async () => {
     if (!ai) {
@@ -153,9 +179,8 @@ const ProcessingScreen = ({ setCurrentScreen, selectedFile, setProcessedOutput, 
     }
   };
 
-  const thumbnailSource = selectedFile && selectedFile.uri
-    ? { uri: selectedFile.uri }
-    : documentPlaceholderImage;
+  const isPdf = selectedFile && selectedFile.mimeType === 'application/pdf';
+  const thumbnailSource = isPdf ? documentPlaceholderImage : (selectedFile && selectedFile.uri ? { uri: selectedFile.uri } : documentPlaceholderImage);
 
   return (
     <View style={styles.container}>
@@ -170,7 +195,28 @@ const ProcessingScreen = ({ setCurrentScreen, selectedFile, setProcessedOutput, 
 
       <ScrollView contentContainerStyle={styles.scrollViewContent}>
         <View style={styles.imageContainer}>
-          <Image source={thumbnailSource} style={styles.documentImage} resizeMode="contain" />
+          {isPdf ? (
+            <Image source={require('./assets/document_icon.png')} style={styles.documentImage} resizeMode="contain" />
+          ) : (
+            <Image source={thumbnailSource} style={styles.documentImage} resizeMode="contain" />
+          )}
+          {processingProgress > 0 && processingProgress < 100 && (
+            <Animated.View
+              style={[
+                styles.scanLine,
+                {
+                  transform: [
+                    {
+                      translateY: scanAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [-styles.documentImage.maxHeight / 2, styles.documentImage.maxHeight / 2], // Adjust based on image height
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            />
+          )}
         </View>
 
         <View style={styles.processingInfoContainer}>
@@ -230,6 +276,13 @@ const styles = StyleSheet.create({
     maxHeight: 537,
     borderRadius: 8,
     backgroundColor: 'beige',
+  },
+  scanLine: {
+    position: 'absolute',
+    width: '80%',
+    height: 2,
+    backgroundColor: COLORS.scanLineColor, // You'll need to define this color in colors.js
+    borderRadius: 1,
   },
   processingInfoContainer: {
     padding: 16,

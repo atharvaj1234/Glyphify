@@ -34,8 +34,12 @@ android
 *.pem
 
 # local env files
+.env
 .env*.local
 
 # typescript
 *.tsbuildinfo
 my-release-key.keystore
+
+code_context.txt
+builds

@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { Image } from "react-native";
+import { SvgUri } from 'react-native-svg';
 import {
   StyleSheet,
   Text,
@@ -17,12 +19,14 @@ import { COLORS } from "./constants/colors";
 const UploadScreen = ({
   setCurrentScreen,
   setSelectedFile,
+  selectedFile,
   setActiveTab,
   activeTab,
   setAdditionalInstructions,
   additionalInstructions,
 }) => {
-  //   const [activeTab, setActiveTab] = useState('Generate Notes'); // State for the toggle button
+
+    const [fileSelected, setFileSelected] = useState(false); // State for the toggle button
 
   const pickDocument = async () => {
     try {
@@ -39,8 +43,9 @@ const UploadScreen = ({
       const file = result.assets[0]; // Access the first selected asset
       console.log("Selected file:", file);
 
-      // Set the selected file state and navigate to Processing screen
+      // Set the selected file state
       setSelectedFile(file);
+      setFileSelected(file);
     } catch (err) {
       console.error("Error picking document:", err);
       Alert.alert("Error", "Failed to pick document. Please try again.");
@@ -126,19 +131,46 @@ const UploadScreen = ({
             {/* Drag and Drop Area */}
             <View style={styles.uploadAreaContainer}>
               <View style={styles.dashedBorderBox}>
-                <View style={styles.uploadTextContainer}>
-                  <Text style={styles.uploadTextTitle}>
-                    Drag and drop files here
+              {fileSelected ? (
+                <View style={styles.filePreviewContainer}>
+                  {fileSelected.mimeType === "application/pdf" ? (
+                    <Image
+                      source={require("./assets/document_icon.png")}
+                      style={styles.fileIcon}
+                    />
+                  ) : (
+                    <Image
+                      source={{ uri: fileSelected.uri }}
+                      style={styles.filePreviewImage}
+                    />
+                  )}
+                  <Text style={styles.fileNameText} numberOfLines={1} ellipsizeMode="middle">
+                    {fileSelected.name}
                   </Text>
-                  <Text style={styles.uploadTextOr}>Or</Text>
+                  <TouchableOpacity
+                    style={styles.changeFileButton}
+                    onPress={pickDocument}
+                  >
+                    <Text style={styles.changeFileButtonText}>Change File</Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity
-                  style={styles.browseFilesButton}
-                  onPress={pickDocument}
-                >
-                  <Text style={styles.browseFilesButtonText}>Browse Files</Text>
-                </TouchableOpacity>
-              </View>
+              ) : (
+                <>
+                  <View style={styles.uploadTextContainer}>
+                    <Text style={styles.uploadTextTitle}>
+                      Drag and drop files here
+                    </Text>
+                    <Text style={styles.uploadTextOr}>Or</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.browseFilesButton}
+                    onPress={pickDocument}
+                  >
+                    <Text style={styles.browseFilesButtonText}>Browse Files</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
             </View>
 
             {/* Accepted Formats Info */}
@@ -357,7 +389,48 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primaryBackground,
     textAlignVertical: "top", // Aligns text to the top for multiline input
   },
-    nextButton: {
+  filePreviewContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 20,
+  },
+  fileIcon: {
+    width: 80,
+    height: 80,
+    resizeMode: 'contain',
+  },
+  filePreviewImage: {
+    width: 150,
+    height: 150,
+    resizeMode: 'contain',
+    borderRadius: 8,
+  },
+  fileNameText: {
+    fontFamily: "Inter-Medium",
+    fontSize: 16,
+    color: COLORS.darkText,
+    maxWidth: '80%',
+  },
+  changeFileButton: {
+    backgroundColor: COLORS.lightBlueBackground,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 84,
+    height: 40,
+    marginTop: 10,
+  },
+  changeFileButtonText: {
+    fontFamily: "Inter-Bold",
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: "center",
+    color: COLORS.darkText,
+  },
+  nextButton: {
     backgroundColor: COLORS.onboardingBlue,
     borderRadius: 24,
     height: 48,

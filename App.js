@@ -66,6 +66,10 @@ export default function App() {
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
   const [currentScreen, setCurrentScreen] = useState('Home'); // 'Home', 'Upload', 'Processing', 'ProcessedOutput', 'Files', 'Settings'
   const [selectedFile, setSelectedFile] = useState(null);
+
+  useEffect(() => {
+    console.log("selectedFile in App.js changed:", selectedFile);
+  }, [selectedFile]);
   const [selectedAIModel, setSelectedAIModel] = useState(null);
   const [processedOutput, setProcessedOutput] = useState(null);
   const [activeMode, setActiveMode] = useState('Generate Notes');

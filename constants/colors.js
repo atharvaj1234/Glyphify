@@ -14,8 +14,9 @@ export const COLORS = {
   progressBarBackground: '#CFDBE8',
   progressBarFill: '#0D80F2',
   blueButton: '#0D80F2',
-  blueButtonText: '#F7FAFC',
-  onboardingBlue: '#268AED',
+  blueButtonText: '#FFFFFF',
+  onboardingBlue: '#4285F4',
+  scanLineColor: '#4285F4',
   updateButtonBackground: '#BFD6ED', // New update API key button background
   inactiveTextSettings: '#5C738C', // New placeholder/inactive text from settings
   developedByText: '#555555', // Specific grey for "Developed by"
