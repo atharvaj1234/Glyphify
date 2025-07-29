@@ -1,6 +1,6 @@
 # Glyphify: Revolutionizing Document Interaction with AI
 
-![Glyphify Hero Image](https://atharvaj1234.github.io/glyphify/hero-section.png) <!-- Replace with an actual hero image URL -->
+![Glyphify Hero Image](https://atharvaj1234.github.io/Glyphify/hero-section.png) <!-- Replace with an actual hero image URL -->
 
 ## 🚀 Project Overview
 
@@ -32,8 +32,8 @@ Glyphify is the ultimate tool for enhanced productivity and efficient learning, 
 ### Mobile Application (Android & iOS)
 
 1.  **Download from App Stores**: Glyphify will soon be available on the Google Play Store and Apple App Store.
-    -   [Download for Android](https://atharvaj1234.github.io/glyphify/) <!-- Replace with actual link -->
-    <!-- -   [Download for iOS](https://atharvaj1234.github.io/glyphify/) Replace with actual link -->
+    -   [Download for Android](https://atharvaj1234.github.io/Glyphify/) <!-- Replace with actual link -->
+    <!-- -   [Download for iOS](https://atharvaj1234.github.io/Glyphify/) Replace with actual link -->
 
 2.  **Manual Installation (for Developers/Testers)**:
     -   Clone the repository:
