@@ -1,6 +1,6 @@
 # Glyphify: Revolutionizing Document Interaction with AI
 
-![Glyphify Hero Image](https://atharvaj1234.github.io/Glyphify/hero-section.png) <!-- Replace with an actual hero image URL -->
+![Glyphify Hero Image](https://atharvaj1234.github.io/Glyphify/assets/hero-section-CjJnCuSE.png) <!-- Replace with an actual hero image URL -->
 
 ## 🚀 Project Overview
 
@@ -38,7 +38,7 @@ Glyphify is the ultimate tool for enhanced productivity and efficient learning, 
 2.  **Manual Installation (for Developers/Testers)**:
     -   Clone the repository:
         ```bash
-        git clone https://github.com/atharvaj1234/glyphify.git
+        git clone https://github.com/atharvaj1234/Glyphify.git
         cd Glyphify
         ```
     -   Install dependencies:
