@@ -121,7 +121,7 @@ const ProcessingScreen = ({ setCurrentScreen, selectedFile, setProcessedOutput, 
       setProcessingProgress(100);
       setProcessingStatus('Processing complete!');
 
-      let outputType = 'text'; // Default to text
+      let outputType = 'markdown'; // Default to text
       let cleanedContent = rawExtractedText.trim(); // Start with trimmed raw text
 
       // Determine output type and clean content based on prefix
@@ -132,7 +132,7 @@ const ProcessingScreen = ({ setCurrentScreen, selectedFile, setProcessedOutput, 
         outputType = 'csv';
         cleanedContent = cleanedContent.substring(7).trim();
       } else if (cleanedContent.startsWith('```text')) {
-        outputType = 'text';
+        outputType = 'markdown';
         cleanedContent = cleanedContent.substring(8).trim();
       }
       
