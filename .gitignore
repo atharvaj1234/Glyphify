@@ -5,7 +5,6 @@ node_modules/
 
 # Expo
 .expo/
-dist/
 web-build/
 expo-env.d.ts
 
@@ -28,6 +27,7 @@ yarn-error.*
 
 # build
 android
+builds
 
 # macOS
 .DS_Store
@@ -42,4 +42,3 @@ android
 my-release-key.keystore
 
 code_context.txt
-builds

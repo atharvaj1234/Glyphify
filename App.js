@@ -19,18 +19,18 @@ import * as SecureStore from 'expo-secure-store';
 import { GoogleGenAI } from '@google/genai';
 
 // Import database functions
-import { initDb, addDocumentToHistory, getHistoryDocuments, updateDocumentTitle, deleteDocument } from './database';
+import { initDb, addDocumentToHistory, getHistoryDocuments, updateDocumentTitle, deleteDocument } from './src/utils/database';
 
 // Import screens
-import UploadScreen from './UploadScreen';
-import ProcessingScreen from './ProcessingScreen';
-import ProcessedOutputScreen from './ProcessedOutputScreen';
-import OnboardingScreen from './OnboardingScreen';
-import HistoryScreen from './HistoryScreen';
-import SettingsScreen from './SettingsScreen'; // Import SettingsScreen
+import UploadScreen from './src/screens/UploadScreen';
+import ProcessingScreen from './src/screens/ProcessingScreen';
+import ProcessedOutputScreen from './src/screens/ProcessedOutputScreen';
+import OnboardingScreen from './src/screens/OnboardingScreen';
+import HistoryScreen from './src/screens/HistoryScreen';
+import SettingsScreen from './src/screens/SettingsScreen'; // Import SettingsScreen
 
 // Import COLORS from constants
-import { COLORS } from './constants/colors';
+import { COLORS } from './src/constants/colors';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
